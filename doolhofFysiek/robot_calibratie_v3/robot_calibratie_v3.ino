@@ -12,7 +12,7 @@ int MotorLeft_1 = 9;
 int MotorLeft_2 = 10;
 int MotorRight_1 = 5;
 int MotorRight_2 = 6;
-int MotorCorrection = 8;
+int MotorCorrection = 0;
 
 // Button setup
 int button1 = 2;
@@ -46,7 +46,8 @@ void loop() {
     // Detect button press (transition from HIGH to LOW)
     if (buttonState == LOW && lastButtonState == HIGH) {
       // calibration();
-      followLine();
+      // followLine();
+      wheelaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahhhhhhhhh();
     }
     lastButtonState = buttonState; // Update button state
   
@@ -57,6 +58,47 @@ void loop() {
 // ###### fuctions ######
 
 void followLine() { 
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  const unsigned long interval = 1000; // Interval in milliseconds
+  Serial.println("follow line");
+
+  while (millis() - startTime < 20000) { // Run for 10 seconds
+    for (int i = 0; i < 8; i++) {
+      if (analogRead(lineSensors[i]) > sensorTarget) {
+        // Serial.println(analogRead(lineSensors[i]));
+        if (i > 3) {
+          Serial.print("right ");
+          Serial.println(lineFollowCorrection[i]);
+          
+          if (i = 3) {
+            // TurnRight(255);
+            TurnLeft(255);
+          } else {
+            TurnRightWithCurve(255, lineFollowCorrection[i]);
+          }
+        } else if (i < 3) {
+          Serial.print("Left ");
+          Serial.println(lineFollowCorrection[i]);
+          
+          TurnLeft(255);
+          if (i = 7) {
+            // TurnLeft(255);
+            TurnRight(255);
+          } else {
+            TurnLeftWithCurve(255, lineFollowCorrection[i]);
+          }
+        }
+      } else {
+        MoveForward(255);
+      }
+    }
+  }
+  
+  MotorsStop();
+}
+
+void followLineOld() { 
   unsigned long startTime = millis();
   unsigned long previousMillis = 0;
   const unsigned long interval = 1000; // Interval in milliseconds
@@ -122,6 +164,68 @@ void calibration() {
   
   MotorsStop();
   Serial.println("### Calibration Complete ###");
+}
+
+void wheelaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahhhhhhhhh() {
+  Serial.println(">//////<");
+
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  const unsigned long interval = 30UL; // Interval in milliseconds
+
+  while (millis() - startTime < 5000) { // Run for 5 seconds
+    // MoveForward(255);
+    
+
+    // run with interval
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      
+      int wasd1 = digitalRead(ws1);
+      int wasd2 = digitalRead(ws2);
+
+      Serial.println(wasd1);
+      Serial.println(wasd2);
+
+      if (wasd1 == wasd2) {
+        Serial.println("moveforward");
+        // MoveForward(255);
+        analogWrite(MotorLeft_1, 255);
+        analogWrite(MotorLeft_2, 0);
+        analogWrite(MotorRight_1, 255);
+        analogWrite(MotorRight_2, 0);
+
+
+      } else if (wasd1 == 0) {
+        Serial.println("left");
+        // TurnLeft(255);
+        // TurnRight(255);
+        analogWrite(MotorLeft_1, 255);
+        analogWrite(MotorLeft_2, 0);
+        analogWrite(MotorRight_1, 240);
+        analogWrite(MotorRight_2, 0);
+
+
+
+
+      } else if (wasd2 == 0) {
+        Serial.println("right");
+        // TurnRight(255);
+        // TurnLeft(255);
+        analogWrite(MotorLeft_1, 240);
+        analogWrite(MotorLeft_2, 0);
+        analogWrite(MotorRight_1, 255);
+        analogWrite(MotorRight_2, 0);
+
+
+
+      }
+
+    }
+  }
+  MotorsStop();
+  Serial.println("### test ###");
 }
 
 
