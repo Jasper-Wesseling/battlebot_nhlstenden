@@ -59,7 +59,7 @@ void loop() {
       // calibration();
       // followLine();
       // followLineOld();
-      wheelaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahhhhhhhhh();
+      turnWheelByRotation(40);
       // lookArround();
     }
     lastButtonState = buttonState; // Update button state
@@ -179,8 +179,7 @@ void calibration() {
   Serial.println("### Calibration Complete ###");
 }
 
-void wheelaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahhhhhhhhh() {
-  Serial.println("//////");
+void turnWheelByRotation(int rotationCount) {
   delay(1000);
   MoveForward(255);
   
@@ -188,8 +187,8 @@ void wheelaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahhhhhhhhh() {
   unsigned long previousMillis = 0;
   const unsigned long interval = 30UL; // Interval in milliseconds
 
-  rotationLeftGoal = rotationLeft + 40;
-  rotationRightGoal = rotationRight + 40;
+  rotationLeftGoal = rotationLeft + rotationCount;
+  rotationRightGoal = rotationRight + rotationCount;
 
   move = true;
 
@@ -208,11 +207,11 @@ void wheelaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahhhhhhhhh() {
       MoveForward(255);
     }
     
-    Serial.println(rotationLeft);
-    Serial.println(rotationRight);
+    // Serial.println(rotationLeft);
+    // Serial.println(rotationRight);
   }
   MotorsStop();
-  Serial.println("### test ###");
+  // Serial.println("### test ###");
 }
 
 void lookArround() { 
