@@ -1,0 +1,108 @@
+void followLine() { 
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  const unsigned long interval = 1000; // Interval in milliseconds
+  Serial.println("follow line");
+
+  while (millis() - startTime < 20000) { // Run for 10 seconds
+    for (int i = 0; i < 8; i++) {
+      if (analogRead(lineSensors[i]) > sensorTarget) {
+        // Serial.println(analogRead(lineSensors[i]));
+        if (i > 3) {
+          Serial.print("right ");
+          Serial.println(lineFollowCorrection[i]);
+          
+          if (i = 3) {
+            // TurnRight(255);
+            TurnLeft(255);
+          } else {
+            TurnRightWithCurve(255, lineFollowCorrection[i]);
+          }
+        } else if (i < 3) {
+          Serial.print("Left ");
+          Serial.println(lineFollowCorrection[i]);
+          
+          TurnLeft(255);
+          if (i = 7) {
+            // TurnLeft(255);
+            TurnRight(255);
+          } else {
+            TurnLeftWithCurve(255, lineFollowCorrection[i]);
+          }
+        }
+      } else {
+        MoveForward(255);
+      }
+    }
+  }
+  
+  MotorsStop();
+}
+
+void followLineOld() { 
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  const unsigned long interval = 1000; // Interval in milliseconds
+  Serial.println("follow line");
+
+  while (millis() - startTime < 20000) { // Run for 10 seconds
+    for (int i = 0; i < 8; i++) {
+      if (analogRead(lineSensors[i]) > sensorTarget) {
+        // Serial.println(analogRead(lineSensors[i]));
+        if (i > 3) {
+          Serial.print("right ");
+          Serial.println(lineFollowCorrection[i]);
+          
+          if (i = 3) {
+            // TurnRight(255);
+            TurnLeft(255);
+          } else {
+            TurnRightWithCurve(255, lineFollowCorrection[i]);
+          }
+        } else if (i < 3) {
+          Serial.print("Left ");
+          Serial.println(lineFollowCorrection[i]);
+          
+          TurnLeft(255);
+          if (i = 7) {
+            // TurnLeft(255);
+            TurnRight(255);
+          } else {
+            TurnLeftWithCurve(255, lineFollowCorrection[i]);
+          }
+        }
+      } else {
+        MoveForward(255);
+      }
+    }
+  }
+  
+  MotorsStop();
+}
+
+void calibration() {
+  Serial.println("//////////");
+  Serial.println("### Calibration Start ###");
+
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  const unsigned long interval = 1000; // Interval in milliseconds
+
+  while (millis() - startTime < 5000) { // Run for 5 seconds
+    unsigned long currentMillis = millis();
+    
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      
+      for (int i = 0; i < 8; i++) {
+        Serial.println(analogRead(lineSensors[i]));
+      }
+      Serial.println("//////////");
+    }
+    // Keep moving forward continuously
+    MoveForward(255);
+  }
+  
+  MotorsStop();
+  Serial.println("### Calibration Complete ###");
+}
