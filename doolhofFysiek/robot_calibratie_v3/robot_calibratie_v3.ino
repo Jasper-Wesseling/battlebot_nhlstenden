@@ -27,7 +27,11 @@ unsigned long rotationLeft = 0;
 unsigned long rotationRight = 0;
 unsigned long rotationLeftGoal = 0;
 unsigned long rotationRightGoal = 0;
-bool move = false;
+volatile bool move = false;
+
+// sonic sensor
+const int trigPin = 13;
+const int echoPin = 12;
 
 void setup() {
   Serial.begin(9600);
@@ -45,6 +49,10 @@ void setup() {
   // interupt on input speedsensort to accuretly measure rotation
   attachInterrupt(digitalPinToInterrupt(ws1), increaseWheelSensorCountLeft, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ws2), increaseWheelSensorCountRight, CHANGE);
+
+  // sonic sensor
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 }
 
 void loop() {
@@ -59,7 +67,18 @@ void loop() {
       // calibration();
       // followLine();
       // followLineOld();
-      turnWheelByRotation(40);
+
+      // turnLeftByRotation(20, 250);
+      // delay(1000);
+      // turnRightByRotation(20, 250);
+
+      // GetDistance("Forward");
+      int distence = GetDistance("Forward");
+      if (distence != -1) {
+        turnWheelByRotation((distence * 2) - 10, 250);
+      }
+
+      
       // lookArround();
     }
     lastButtonState = buttonState; // Update button state
@@ -70,122 +89,14 @@ void loop() {
 
 // ###### fuctions ######
 
-void followLine() { 
-  unsigned long startTime = millis();
-  unsigned long previousMillis = 0;
-  const unsigned long interval = 1000; // Interval in milliseconds
-  Serial.println("follow line");
-
-  while (millis() - startTime < 20000) { // Run for 10 seconds
-    for (int i = 0; i < 8; i++) {
-      if (analogRead(lineSensors[i]) > sensorTarget) {
-        // Serial.println(analogRead(lineSensors[i]));
-        if (i > 3) {
-          Serial.print("right ");
-          Serial.println(lineFollowCorrection[i]);
-          
-          if (i = 3) {
-            // TurnRight(255);
-            TurnLeft(255);
-          } else {
-            TurnRightWithCurve(255, lineFollowCorrection[i]);
-          }
-        } else if (i < 3) {
-          Serial.print("Left ");
-          Serial.println(lineFollowCorrection[i]);
-          
-          TurnLeft(255);
-          if (i = 7) {
-            // TurnLeft(255);
-            TurnRight(255);
-          } else {
-            TurnLeftWithCurve(255, lineFollowCorrection[i]);
-          }
-        }
-      } else {
-        MoveForward(255);
-      }
-    }
-  }
-  
-  MotorsStop();
-}
-
-void followLineOld() { 
-  unsigned long startTime = millis();
-  unsigned long previousMillis = 0;
-  const unsigned long interval = 1000; // Interval in milliseconds
-  Serial.println("follow line");
-
-  while (millis() - startTime < 20000) { // Run for 10 seconds
-    for (int i = 0; i < 8; i++) {
-      if (analogRead(lineSensors[i]) > sensorTarget) {
-        // Serial.println(analogRead(lineSensors[i]));
-        if (i > 3) {
-          Serial.print("right ");
-          Serial.println(lineFollowCorrection[i]);
-          
-          if (i = 3) {
-            // TurnRight(255);
-            TurnLeft(255);
-          } else {
-            TurnRightWithCurve(255, lineFollowCorrection[i]);
-          }
-        } else if (i < 3) {
-          Serial.print("Left ");
-          Serial.println(lineFollowCorrection[i]);
-          
-          TurnLeft(255);
-          if (i = 7) {
-            // TurnLeft(255);
-            TurnRight(255);
-          } else {
-            TurnLeftWithCurve(255, lineFollowCorrection[i]);
-          }
-        }
-      } else {
-        MoveForward(255);
-      }
-    }
-  }
-  
-  MotorsStop();
-}
-
-void calibration() {
-  Serial.println("//////////");
-  Serial.println("### Calibration Start ###");
-
-  unsigned long startTime = millis();
-  unsigned long previousMillis = 0;
-  const unsigned long interval = 1000; // Interval in milliseconds
-
-  while (millis() - startTime < 5000) { // Run for 5 seconds
-    unsigned long currentMillis = millis();
-    
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-      
-      for (int i = 0; i < 8; i++) {
-        Serial.println(analogRead(lineSensors[i]));
-      }
-      Serial.println("//////////");
-    }
-    // Keep moving forward continuously
-    MoveForward(255);
-  }
-  
-  MotorsStop();
-  Serial.println("### Calibration Complete ###");
-}
-
-void turnWheelByRotation(int rotationCount) {
+void turnWheelByRotation(int rotationCount, int speed) {
   delay(1000);
-  MoveForward(255);
+  MoveForward(speed);
   
   unsigned long startTime = millis();
   unsigned long previousMillis = 0;
-  const unsigned long interval = 30UL; // Interval in milliseconds
+  unsigned long currentMillis = millis();
+  const unsigned long interval = 30; // Interval in milliseconds
 
   rotationLeftGoal = rotationLeft + rotationCount;
   rotationRightGoal = rotationRight + rotationCount;
@@ -194,45 +105,177 @@ void turnWheelByRotation(int rotationCount) {
 
   // while (millis() - startTime < 5000) { // Run for 5 seconds
   // !(rotationLeft >= goalLeft) || !(rotationRight != goalRight)
-  while (move) { // Run for 5 seconds  
-    if (rotationLeft > rotationRight) {
-      TurnRightWithCurve(255, 100);
-    }
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    noInterrupts();
+    while (move) { // Run for 5 seconds  
+      interrupts();
+      // Serial.println(rotationLeft);
+      // Serial.println(rotationRight);
+      if (rotationLeft > rotationRight) {
+        TurnRightWithCurve(speed, speed - 100);
+      }
 
-    if (rotationLeft < rotationRight) {
-      TurnLeftWithCurve(255, 100);
-    }
+      if (rotationLeft < rotationRight) {
+        TurnLeftWithCurve(speed, speed - 100);
+      }
 
-    if (rotationLeft == rotationRight) {
-      MoveForward(255);
+      if (rotationLeft == rotationRight) {
+        MoveForward(speed);
+      }   
     }
-    
-    // Serial.println(rotationLeft);
-    // Serial.println(rotationRight);
   }
+ 
   MotorsStop();
-  // Serial.println("### test ###");
 }
 
-void lookArround() { 
+
+void turnLeftByRotation(int rotationCount, int speed) {
+  delay(1000);
+  TurnMotorLeft(speed);
+  TurnMotorReverseRight(speed);
+  
   unsigned long startTime = millis();
   unsigned long previousMillis = 0;
-  const unsigned long interval = 1000; // Interval in milliseconds
-  Serial.println("follow line");
+  unsigned long currentMillis = millis();
+  const unsigned long interval = 30; // Interval in milliseconds
 
-  while (millis() - startTime < 5000) { // Run for 5 seconds
-    Serial.println("test");
+  rotationLeftGoal = rotationLeft + rotationCount;
+  rotationRightGoal = rotationRight + rotationCount;
+
+  move = true;
+
+  // while (millis() - startTime < 5000) { // Run for 5 seconds
+  // !(rotationLeft >= goalLeft) || !(rotationRight != goalRight)
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    noInterrupts();
+    while (move) { // Run for 5 seconds  
+      interrupts();
+      // Serial.println(rotationLeft);
+      // Serial.println(rotationRight);
+      if (rotationLeft > rotationRight) {
+        TurnMotorLeft(speed - 100);
+      }
+
+      if (rotationLeft < rotationRight) {
+        TurnMotorReverseRight(speed - 100);
+      }
+
+      if (rotationLeft == rotationRight) {
+        TurnMotorLeft(speed);
+        TurnMotorReverseRight(speed);
+      }   
+    }
+  }
+ 
+  MotorsStop();
+}
+
+
+void turnRightByRotation(int rotationCount, int speed) {
+  delay(1000);
+  TurnMotorRight(speed);
+  TurnMotorReverseLeft(speed);
+  
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  unsigned long currentMillis = millis();
+  const unsigned long interval = 30; // Interval in milliseconds
+
+  rotationLeftGoal = rotationLeft + rotationCount;
+  rotationRightGoal = rotationRight + rotationCount;
+
+  move = true;
+
+  // while (millis() - startTime < 5000) { // Run for 5 seconds
+  // !(rotationLeft >= goalLeft) || !(rotationRight != goalRight)
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    noInterrupts();
+    while (move) { // Run for 5 seconds  
+      interrupts();
+      // Serial.println(rotationLeft);
+      // Serial.println(rotationRight);
+      if (rotationLeft > rotationRight) {
+        TurnMotorRight(speed - 100);
+      }
+
+      if (rotationLeft < rotationRight) {
+        TurnMotorReverseLeft(speed - 100);
+      }
+
+      if (rotationLeft == rotationRight) {
+        TurnMotorRight(speed);
+        TurnMotorReverseLeft(speed);
+      }   
+    }
+  }
+ 
+  MotorsStop();
+}
+
+int GetDistance(String Direction) {
+  // timing stuff
+  unsigned long startTime = millis();
+  unsigned long previousMillis = 0;
+  unsigned long currentMillis = millis();
+  const unsigned long interval = 30; // Interval in milliseconds
+  volatile long duration;
+  volatile int distance;
+
+  // noInterrupts();
+
+  // gewooon for loopje doen 3 keer
+  int readings[3];
+  for (int i = 0; i < 3; i++) {
+    // Trigger the ultrasonic sensor
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+
+    // removed the max wait time because we ran into timing issues
+    duration = pulseIn(echoPin, HIGH);
+    // Convert to distance in cm
+    distance = duration * 0.034 / 2;
+    readings[i] = distance;
+    // delay(200);
+  }  
+  
+  // time out returns 0
+  // Find min and max values from readings
+  int minVal = min(readings[0], min(readings[1], readings[2]));
+  int maxVal = max(readings[0], max(readings[1], readings[2]));
+
+  // Define a threshold (adjust this based on testing)
+  int threshold = 2;  
+
+  for(int i = 0; i < 3; i++) {
+    Serial.println(readings[i]);
+  }
+
+  // If the difference between max and min readings is within the threshold, return the average
+  if ((maxVal - minVal) <= threshold) {
+    Serial.println((readings[0] + readings[1] + readings[2]) / 3);
+    return (readings[0] + readings[1] + readings[2]) / 3; 
+  } else {
+    Serial.println(-1);
+    return -1;  // Return -1 to indicate an invalid reading
   }
 }
+
+
 
 void increaseWheelSensorCountLeft() {
   rotationLeft++;
-  if (move == true &&  (rotationLeft >= rotationLeftGoal && rotationRight >= rotationRightGoal)) { Serial.println("test"); move = false;}
+  if (move == true &&  (rotationLeft >= rotationLeftGoal && rotationRight >= rotationRightGoal)) { move = false;}
 }
 
 void increaseWheelSensorCountRight() {
   rotationRight++;
-  if (move == true &&  (rotationLeft >= rotationLeftGoal && rotationRight >= rotationRightGoal)) { Serial.println("test"); move = false;}
+  if (move == true &&  (rotationLeft >= rotationLeftGoal && rotationRight >= rotationRightGoal)) { move = false;}
 }
 
 // ###### motor controll ######
