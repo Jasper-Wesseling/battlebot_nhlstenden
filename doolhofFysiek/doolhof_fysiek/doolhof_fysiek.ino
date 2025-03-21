@@ -14,10 +14,10 @@ const int R2_ROTATION_PIN = 2;
 int deadPulses;
 int currentPulse;
 // IR pins
-const int IR_PIN_ONE = A0;
+const int IR_PIN_ZERO = A0;
 const int IR_PIN_FOUR = A4;
-const int IR_PIN_FIVE = A3;
-const int IR_PIN_EIGHT = A7;
+const int IR_PIN_THREE = A3;
+const int IR_PIN_SEVEN = A7;
 // Servo pins
 const int SERVO_PIN = 11;
 const int TRIGGER_PIN = 13;
@@ -26,7 +26,7 @@ const int ECHO_PIN = 12;
 int r1Rotations = 0;
 int r2Rotations = 0;
 // Approx*
-const int ONE_CM_IN_ROTATIONS = 2;
+const int ZERO_CM_IN_ROTATIONS = 2;
 // echo sensor variables
 long duration;
 int distance;
@@ -41,7 +41,7 @@ double rightDistance = 0;
 double leftDistance = 0;
 double differenceInDistance;
 boolean isInMiddle = false;
-boolean isStartupDone = false;
+boolean isStartupDZERO = false;
 const int IR_COLOR_BLACK = 900;
 const int GRIPPER_PIN = 7;
 
@@ -65,10 +65,10 @@ void setup()
   pinMode(A2_MOTOR_PIN, OUTPUT);
   pinMode(B1_MOTOR_PIN, OUTPUT);
   pinMode(B2_MOTOR_PIN, OUTPUT);
-  pinMode(IR_PIN_ONE, INPUT);
+  pinMode(IR_PIN_ZERO, INPUT);
   pinMode(IR_PIN_FOUR, INPUT);
-  pinMode(IR_PIN_FIVE, INPUT);
-  pinMode(IR_PIN_EIGHT, INPUT);
+  pinMode(IR_PIN_THREE, INPUT);
+  pinMode(IR_PIN_SEVEN, INPUT);
   pinMode(GRIPPER_PIN, OUTPUT);
   // Initialization routine
   for (int i = 0; i < 3; i++){
@@ -88,21 +88,21 @@ void setup()
       moveForward(245,255);
     }
   }
-  while (analogRead(IR_PIN_ONE) > IR_COLOR_BLACK){
+  while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
     moveForward(245,255);
   }
-  while (analogRead(IR_PIN_ONE) < IR_COLOR_BLACK){
+  while (analogRead(IR_PIN_ZERO) < IR_COLOR_BLACK){
     moveForward(245,255);
   }
-  while (analogRead(IR_PIN_ONE) > IR_COLOR_BLACK){
+  while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
     moveForward(245,255);
   }
   //CLOSE THE SERVO
-  isStartupDone = true;
+  isStartupDZERO = true;
   moveGripper(37);
   moveForward(0 , 255);
   delay(700);
-  while (analogRead(IR_PIN_FIVE) < IR_COLOR_BLACK){
+  while (analogRead(IR_PIN_THREE) < IR_COLOR_BLACK){
     delay(1);
   }
   stopMoving();
@@ -227,7 +227,7 @@ void checkIfR2Dead(boolean moveBack){
 void loop()
 {
   // IR sensor readings and movement control based on sensor readings
-  if(analogRead(IR_PIN_ONE) > IR_COLOR_BLACK)
+  if(analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK)
   {
     moveForward(240,200);
   }
@@ -235,15 +235,15 @@ void loop()
   {
     moveForward(240,220);
   }
-  if(analogRead(IR_PIN_FIVE) > IR_COLOR_BLACK)
+  if(analogRead(IR_PIN_THREE) > IR_COLOR_BLACK)
   {
     moveForward(220,240);
   }
-  if(analogRead(IR_PIN_EIGHT) > IR_COLOR_BLACK)
+  if(analogRead(IR_PIN_SEVEN) > IR_COLOR_BLACK)
   {
     moveForward(200,240);
   }
-  if (analogRead(IR_PIN_ONE) > IR_COLOR_BLACK && analogRead(IR_PIN_FOUR) > IR_COLOR_BLACK && analogRead(IR_PIN_FIVE) > IR_COLOR_BLACK && analogRead(IR_PIN_EIGHT) > IR_COLOR_BLACK )
+  if (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK && analogRead(IR_PIN_FOUR) > IR_COLOR_BLACK && analogRead(IR_PIN_THREE) > IR_COLOR_BLACK && analogRead(IR_PIN_SEVEN) > IR_COLOR_BLACK )
   {
     stopMoving();
     delay(250);
@@ -263,7 +263,7 @@ void loop()
     long cmToMove = getDistanceFromPulse();
     cmToMove = constrain(cmToMove, 0, 150);
     // Calculate distance if pulses
-    pulsesToMove = (cmToMove * ONE_CM_IN_ROTATIONS) - 1;
+    pulsesToMove = (cmToMove * ZERO_CM_IN_ROTATIONS) - 1;
     if (cmToMove < 12)
     {
       moveServo(180);
@@ -289,7 +289,7 @@ void loop()
   {
     stopMoving();
     Serial.println("Approx CM moved:");
-    Serial.print(r1Rotations / ONE_CM_IN_ROTATIONS);
+    Serial.print(r1Rotations / ZERO_CM_IN_ROTATIONS);
     pulsesToMove = 0;
     r1Rotations = 0;
     // And back to start from here
@@ -391,7 +391,7 @@ void turnAround()
   {
     r1Rotations = 0;
     // First 60 degrees
-    while (r1Rotations < 24)
+    while (r1Rotations < 20)
     {
       moveBackward(210, 0);
       checkIfR1Dead(false);
