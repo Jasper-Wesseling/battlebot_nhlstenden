@@ -94,9 +94,9 @@ void loop() {
 // ###### fuctions ######
 
 void startDoolhof() {
-  turnWheelByRotation(55, 250);
-  turnRightByRotation(14, 250);
-  turnWheelByRotation(35, 250);
+  turnWheelByRotation(55, 255);
+  turnRightByRotation(14, 255);
+  turnWheelByRotation(35, 255);
 }
 
 
@@ -121,21 +121,25 @@ void turnWheelByRotation(int rotationCount, int speed) {
     previousMillis = currentMillis;
     noInterrupts();
     while (move) { // Run for 5 seconds  
-      interrupts();
+      
       // Serial.println(rotationLeft);
       // Serial.println(rotationRight);
       if (rotationLeft > rotationRight) {
-        TurnRightWithCurve(speed, speed - 80);
+        TurnMotorLeft(speed);
+        TurnRightWithCurve(speed, speed - 20);
       }
 
       if (rotationLeft < rotationRight) {
-        TurnLeftWithCurve(speed, speed - 80);
+        TurnMotorRight(speed);
+        TurnLeftWithCurve(speed, speed - 20);
       }
 
       if (rotationLeft == rotationRight) {
         TurnMotorLeft(speed);
         TurnMotorRight(speed);
-      }   
+      }  
+
+      interrupts(); 
     }
   }
  
@@ -164,16 +168,16 @@ void turnLeftByRotation(int rotationCount, int speed) {
     previousMillis = currentMillis;
     noInterrupts();
     while (move) { // Run for 5 seconds  
-      interrupts();
+      // interrupts();
       // Serial.println(rotationLeft);
       // Serial.println(rotationRight);
       if (rotationLeft > rotationRight) {
-        TurnMotorLeft(speed - 80);
+        TurnMotorLeft(speed - 20);
         TurnMotorReverseRight(speed);
       }
 
       if (rotationLeft < rotationRight) {
-        TurnMotorReverseRight(speed - 80);
+        TurnMotorReverseRight(speed - 20);
         TurnMotorLeft(speed);
       }
 
@@ -181,6 +185,7 @@ void turnLeftByRotation(int rotationCount, int speed) {
         TurnMotorLeft(speed);
         TurnMotorReverseRight(speed);
       }   
+      interrupts();
     }
   }
  
@@ -209,16 +214,16 @@ void turnRightByRotation(int rotationCount, int speed) {
     previousMillis = currentMillis;
     noInterrupts();
     while (move) { // Run for 5 seconds  
-      interrupts();
+      // interrupts();
       // Serial.println(rotationLeft);
       // Serial.println(rotationRight);
       if (rotationLeft > rotationRight) {
-        TurnMotorRight(speed - 80);
+        TurnMotorRight(speed - 20);
         TurnMotorReverseLeft(speed);
       }
 
       if (rotationLeft < rotationRight) {
-        TurnMotorReverseLeft(speed - 80);
+        TurnMotorReverseLeft(speed - 20);
         TurnMotorRight(speed);
       }
 
@@ -226,6 +231,7 @@ void turnRightByRotation(int rotationCount, int speed) {
         TurnMotorRight(speed);
         TurnMotorReverseLeft(speed);
       }   
+      interrupts();
     }
   }
  
