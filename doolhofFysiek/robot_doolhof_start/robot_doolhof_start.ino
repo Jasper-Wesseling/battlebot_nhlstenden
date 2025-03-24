@@ -1,6 +1,6 @@
 // line sensor pins
 int lineSensors[] = {A0, A1, A2, A4, A3, A5, A6, A7};
-int lineFollowCorrection[] = {200, 160, 80, 40, 40, 80, 160, 200};
+int lineFollowCorrection[] = {200, 180, 80, 40, 40, 80, 180, 200};
 int sensorTarget = 930;
 
 // timing
@@ -34,7 +34,7 @@ const int trigPin = 13;
 const int echoPin = 12;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9800);
   pinMode(button1, INPUT_PULLUP); // Use internal pull-up resistor
   // for all the line sensors
   for (int i = 0; i < 8; i++) {
@@ -73,15 +73,15 @@ void loop() {
       // turnRightByRotation(20, 250);
 
       // GetDistance("Forward");
-      int distence = GetDistance("Forward");
-      Serial.println("/////////////////////");
-      Serial.println(distence);
-      Serial.println(distence * 2);
-      Serial.println((distence * 2.048) - 10);
-      if (distence != -1) {
-        turnWheelByRotation((distence * 2) - 10, 250);
-      }
-
+      // int distence = GetDistance("Forward");
+      // Serial.println("/////////////////////");
+      // Serial.println(distence);
+      // Serial.println(distence * 2);
+      // Serial.println((distence * 2.048) - 10);
+      // if (distence != -1) {
+      //   turnWheelByRotation((distence * 2) - 10, 250);
+      // }
+      startDoolhof();
       
       // lookArround();
     }
@@ -93,9 +93,17 @@ void loop() {
 
 // ###### fuctions ######
 
+void startDoolhof() {
+  turnWheelByRotation(55, 250);
+  turnRightByRotation(14, 250);
+  turnWheelByRotation(35, 250);
+}
+
+
 void turnWheelByRotation(int rotationCount, int speed) {
   delay(1000);
-  MoveForward(speed);
+  TurnMotorLeft(speed);
+  TurnMotorRight(speed);
   
   unsigned long startTime = millis();
   unsigned long previousMillis = 0;
@@ -117,15 +125,16 @@ void turnWheelByRotation(int rotationCount, int speed) {
       // Serial.println(rotationLeft);
       // Serial.println(rotationRight);
       if (rotationLeft > rotationRight) {
-        TurnRightWithCurve(speed, speed - 100);
+        TurnRightWithCurve(speed, speed - 80);
       }
 
       if (rotationLeft < rotationRight) {
-        TurnLeftWithCurve(speed, speed - 100);
+        TurnLeftWithCurve(speed, speed - 80);
       }
 
       if (rotationLeft == rotationRight) {
-        MoveForward(speed);
+        TurnMotorLeft(speed);
+        TurnMotorRight(speed);
       }   
     }
   }
@@ -159,11 +168,13 @@ void turnLeftByRotation(int rotationCount, int speed) {
       // Serial.println(rotationLeft);
       // Serial.println(rotationRight);
       if (rotationLeft > rotationRight) {
-        TurnMotorLeft(speed - 100);
+        TurnMotorLeft(speed - 80);
+        TurnMotorReverseRight(speed);
       }
 
       if (rotationLeft < rotationRight) {
-        TurnMotorReverseRight(speed - 100);
+        TurnMotorReverseRight(speed - 80);
+        TurnMotorLeft(speed);
       }
 
       if (rotationLeft == rotationRight) {
@@ -202,11 +213,13 @@ void turnRightByRotation(int rotationCount, int speed) {
       // Serial.println(rotationLeft);
       // Serial.println(rotationRight);
       if (rotationLeft > rotationRight) {
-        TurnMotorRight(speed - 100);
+        TurnMotorRight(speed - 80);
+        TurnMotorReverseLeft(speed);
       }
 
       if (rotationLeft < rotationRight) {
-        TurnMotorReverseLeft(speed - 100);
+        TurnMotorReverseLeft(speed - 80);
+        TurnMotorRight(speed);
       }
 
       if (rotationLeft == rotationRight) {
