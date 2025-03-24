@@ -94,7 +94,8 @@ void loop() {
 // ###### fuctions ######
 
 void startDoolhof() {
-  turnWheelByRotation(55, 255);
+  turnWheelByRotation(55, 255);`
+  
   turnRightByRotation(14, 255);
   turnWheelByRotation(35, 255);
 }
