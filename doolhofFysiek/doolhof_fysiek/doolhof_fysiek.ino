@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 
 const int NUM_PIXELS = 4; // Number of NeoPixels in the strip
-const int PIXEL_PIN = 18;  // Pin connected to the NeoPixels
+const int PIXEL_PIN = 8;  // Pin connected to the NeoPixels
 // Create NeoPixel object
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 // Motor pins
@@ -36,7 +36,7 @@ int pulsesToMove;
 int currentAmountOfPulses;
 int noMoveCounter;
 boolean isPreviousVoid = false;
-// Use these as reference points
+// reference points
 double rightDistance = 0;
 double leftDistance = 0;
 double differenceInDistance;
@@ -99,7 +99,7 @@ void setup()
   }
   //CLOSE THE SERVO
   isStartupDZERO = true;
-  moveGripper(37);
+  moveGripper(1100);
   moveForward(0 , 255);
   delay(700);
   while (analogRead(IR_PIN_THREE) < IR_COLOR_BLACK){
@@ -128,7 +128,7 @@ void rotateR1()
     timer = millis() + 10;
   }
   interrupts();
-  moveGripper(37);
+  // moveGripper(1100);
 }
 
 // Interrupt routine for rotation pin R2
@@ -148,7 +148,7 @@ void rotateR2()
     timer = millis() + 10;
   }
   interrupts();
-  moveGripper(37);
+  // moveGripper(1100);
 }
 
 // Check if R1 rotation is dead
@@ -250,7 +250,6 @@ void loop()
     moveGripper(100);
     exit(0);
   }
-  
   
 // Called when the robot doesnt know how far it can drive.
   // Basically the initial push for the robot to start
@@ -510,7 +509,7 @@ void turnRight()
   // Actually turn right here.
   while (r1Rotations < 29)
   {
-    moveRight(220, 0);
+    moveRight(250, 0);
     checkIfR1Dead(true);
     Serial.println(r1Rotations);
     sendPulse();
