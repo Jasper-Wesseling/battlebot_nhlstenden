@@ -2,9 +2,9 @@
 
 // Neopixel Setup
 #include <Adafruit_NeoPixel.h>
-#define PIN 12
+#define NEOPIXEL_PIN 8
 #define NUM_PIXELS 30
-Adafruit_NeoPixel strip(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(NUM_PIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 // Gripper Setup
 #define GRIPPER_SERVO 7
@@ -14,8 +14,8 @@ Adafruit_NeoPixel strip(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 // Motor Setup
 #define MOTOR_L_A1 10
 #define MOTOR_L_A2 9
-#define MOTOR_R_B1 5
-#define MOTOR_R_B2 6
+#define MOTOR_R_B1 6
+#define MOTOR_R_B2 5
 
 // Array line sensors setup
 #define SENSOR_COUNT 8
@@ -24,12 +24,12 @@ int _sensorMin[SENSOR_COUNT];
 int _sensorMax[SENSOR_COUNT];
 
 // Ultrasonic sensor
-#define TRIG_PIN 3
-#define ECHO_PIN 4
+#define TRIG_PIN 13
+#define ECHO_PIN 12
 
 // Speed variables
 #define MAX_SPEED 255
-#define STEADY_SPEED 225
+#define STEADY_SPEED 230
 #define SLOW_SPEED 180
 #define SLOWER_SPEED 60
 #define SLOWEST_SPEED 10
@@ -41,6 +41,8 @@ int _sensorMax[SENSOR_COUNT];
 #define THRESHOLD 600  // Lower threshold for better sensitivity to thin lines
 #define DURATION_90_DEGREES_SPIN 600
 #define DURATION_MOVEMENT_FORWARDS_START 700
+#define DURATION_DELAY_AVOID_OBSTACLE 300
+#define DURATION_MOVEMENT_FORWARDS_AVOID_OBSTACLE 1200
 #define SOUND_SPEED 0.0343  // Speed of sound in air (cm/µs)
 #define BUTTON_PIN 2
 
@@ -104,6 +106,7 @@ void setup() {
 
 void loop() {
   gripper(GRIPPER_CLOSE);
+  checkObstacle();
   followLine();
 }
 
@@ -142,14 +145,14 @@ void motorRotate90DegreesLeft() {
 // Function to turn on NeoPixel for a specific direction
 void setDirectionLights(bool isLeftTurn, bool isRightTurn, bool isMovingStraight) {
   if (isLeftTurn) {
-    // Turn on red for left turn
+    // Turn on blue for left turn
     for (int i = 0; i < NUM_PIXELS; i++) {
       strip.setPixelColor(i, strip.Color(0, 0, 255));  // Blue for left turn
     }
   } else if (isRightTurn) {
     // Turn on blue for right turn
     for (int i = 0; i < NUM_PIXELS; i++) {
-      strip.setPixelColor(i, strip.Color(0, 0, 255));  // Blue for right turn
+      strip.setPixelColor(i, strip.Color(255, 255, 255));  // Blue for right turn
     }
   } else if (isMovingStraight) {
     // Turn on green for moving straight
@@ -188,29 +191,35 @@ float measureDistance() {
   return (_pulseDuration * SOUND_SPEED) / 2;
 }
 
+// Function to check for obstacles and trigger avoidance
+void checkObstacle() {
+  _distance_cm = measureDistance();
+
+  if (_distance_cm > 0 && _distance_cm < 10) {
+    avoidObstacle();
+  }
+}
+
 void avoidObstacle() {
   motorStop();
-  delay(200);
+  delay(DURATION_DELAY_AVOID_OBSTACLE);
 
-  motorRotate90DegreesRight();  // Draai 90° naar rechts
+  motorRotate90DegreesRight();  // Turn 90° to the right 
   motorDrive(MAX_SPEED, MAX_SPEED);
-  delay(800);  // Rijd een stukje vooruit
+  delay(DURATION_DELAY_AVOID_OBSTACLE);  // Drive forwards
 
-  motorRotate90DegreesLeft();  // Draai 90° naar links
+  motorRotate90DegreesLeft();  // Turn 90° to the left
   motorDrive(MAX_SPEED, MAX_SPEED);
-  delay(1300);  // Rijd voorbij het obstakel
+  delay(DURATION_MOVEMENT_FORWARDS_AVOID_OBSTACLE);  // Surpass the obstacle
 
-  motorRotate90DegreesLeft();  // Draai weer 90° naar links
+  motorRotate90DegreesLeft();  // Turn 90° to the left
   motorDrive(MAX_SPEED, MAX_SPEED);
-  delay(800);  // Rijd terug naar de oorspronkelijke lijn
+  delay(DURATION_DELAY_AVOID_OBSTACLE);  // Drive back towards original path
 
-  motorRotate90DegreesRight();  // Draai weer 90° naar rechts (terug naar oorspronkelijke richting)
+  motorRotate90DegreesRight();  // Turn 90° to the right (back on original path)
 
-  // Controleer opnieuw de afstand
+  // Measure distance again
   _distance_cm = measureDistance();
-  if (_distance_cm < 15) {
-    avoidObstacle();  // Herhaal de manoeuvre
-  }
 }
 
 void followLine() {
@@ -242,8 +251,9 @@ void followLine() {
       _blackStartTime = millis();                  // Start the timer
     } else if (millis() - _blackStartTime >= 150)  // Check if 150ms have passed
     {
-      motorDrive(0, 0);                         // Stop motors
-      setDirectionLights(false, false, false);  // Turn off all direction lights
+      motorStop();                         // Stop motors
+      setDirectionLights(false, false, false);  // Turn off all direction lights 
+      gripper(GRIPPER_OPEN);
       _isStopping = true;
       return;  // Stop execution
     }
@@ -275,13 +285,13 @@ void followLine() {
     motorDrive(STEADY_SPEED, 165);           // Slightly to the right
     setDirectionLights(false, true, false);  // Right turn lights
   } else if (sensorReadings[5] >= deadzoneHigh && sensorReadings[6] >= deadzoneHigh) {
-    motorDrive(STEADY_SPEED, 35);            // More to the right
+    motorDrive(STEADY_SPEED, 0);            // More to the right
     setDirectionLights(false, true, false);  // Right turn lights
   } else if (sensorReadings[2] >= deadzoneHigh && sensorReadings[3] >= deadzoneHigh) {
     motorDrive(165, STEADY_SPEED);           // Slightly to the left
     setDirectionLights(true, false, false);  // Left turn lights
   } else if (sensorReadings[1] >= deadzoneHigh && sensorReadings[2] >= deadzoneHigh) {
-    motorDrive(35, STEADY_SPEED);            // More to the left
+    motorDrive(0, STEADY_SPEED);            // More to the left
     setDirectionLights(true, false, false);  // Left turn lights
   } else if (sum < deadzoneLow * SENSOR_COUNT) {
     motorDrive(-255, 255);  // Search for the line
