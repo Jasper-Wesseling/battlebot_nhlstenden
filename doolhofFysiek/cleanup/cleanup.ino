@@ -477,21 +477,22 @@ void turnAround()
 }
 
 // A more in depth function to turn left.
-void turnLeft()
-{
+void turnLeft() {
   delay(200);
-  // This is called incase of the robot being against the wall in front.
-  moveBackward(220, 220);
+  moveBackward(220, 220); // Reverse slightly before turning
   delay(200);
   stopMoving();
   delay(100);
   r2Rotations = 0;
   moveServo(0);
 
-  // Turn the robot left
-  while (r2Rotations < 28)
-  {
-    moveLeft(0, 240);
+  // quick max power boost
+  moveLeft(0, 255);  
+  delay(400);
+
+  // Reduce speed to normal turning speed
+  while (r2Rotations < 28) {
+    moveLeft(0, 220);
     checkIfR2Dead(true);
     sendPulse();
     if (distance < 13)
@@ -508,27 +509,28 @@ void turnLeft()
   r2Rotations = 0;
 }
 
+
 // A more in depth function to turn turn
-void turnRight()
-{
+void turnRight() {
   delay(200);
-  // Move backwards to counter-act the forward creeps because they could work against the turn.
   moveBackward(220, 220);
   delay(200);
   stopMoving();
   delay(100);
   r1Rotations = 0;
-  // Actually turn right here.
-  while (r1Rotations < 28)
-  {
-    moveRight(240, 0);
+
+  // quick max power boost
+  moveRight(255, 0);  
+  delay(400);
+
+  // Reduce speed to normal turning speed
+  while (r1Rotations < 28) {
+    moveRight(220, 0);
     checkIfR1Dead(true);
     Serial.println(r1Rotations);
     sendPulse();
     if (distance < 14) 
-    {
       break;
-    }
   }
   stopMoving();
   delay(200);
@@ -541,6 +543,7 @@ void turnRight()
   r2Rotations = 0;
   delay(200);
 }
+
 
 // Function to move the robot right
 void moveRight(int leftSpeed, int rightSpeed)
