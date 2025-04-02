@@ -52,6 +52,9 @@ long _pulseDuration;
 unsigned long _blackStartTime = 0;
 bool _isStopping = false;
 
+enum RobotState { START, LINE_FOLLOWING };
+RobotState _currentState = START;
+
 void setup() {
   Serial.begin(9600);
 
@@ -82,32 +85,25 @@ void setup() {
     _sensorMin[i] = 1023;
     _sensorMax[i] = 0;
   }
-
-  // Move forward at start
-  motorDrive(MAX_SPEED - 10, MAX_SPEED);
-  delay(DURATION_MOVEMENT_FORWARDS_START);
-
-  motorStop();
-  delay(100);
-
-  // Close the gripper for a short time
-  unsigned long closeStart = millis();
-  while (millis() - closeStart < 500)  // Send pulses for 500ms
-  {
-    gripper(GRIPPER_CLOSE);
-  }
-
-  motorDrive(MAX_SPEED - 10, MAX_SPEED);
-  delay(DURATION_MOVEMENT_FORWARDS_START);
-
-  // Turn 90 degrees left to start line-following
-  motorRotate90DegreesLeft();
 }
 
 void loop() {
-  gripper(GRIPPER_CLOSE);
-  checkObstacle();
-  followLine();
+  switch (_currentState) {
+    case START:
+      _distance_cm = measureDistance();
+
+      if (_distance_cm > 15) {
+        startRace();                    // Call the function to start the race
+        _currentState = LINE_FOLLOWING;  // Transition to line following
+      }
+      break;
+
+    case LINE_FOLLOWING:
+      gripper(GRIPPER_CLOSE);
+      checkObstacle();
+      followLine();
+      break;
+  }
 }
 
 void motorDrive(int left, int right) {
@@ -140,6 +136,28 @@ void motorRotate90DegreesLeft() {
   analogWrite(MOTOR_R_B2, MAX_SPEED);
   delay(DURATION_90_DEGREES_SPIN);
   motorStop();
+}
+
+void startRace() {
+  // Move forward at start
+  motorDrive(MAX_SPEED - 10, MAX_SPEED);
+  delay(DURATION_MOVEMENT_FORWARDS_START);
+
+  motorStop();
+  delay(100);
+
+  // Close the gripper for a short time
+  unsigned long closeStart = millis();
+  while (millis() - closeStart < 500)  // Send pulses for 500ms
+  {
+    gripper(GRIPPER_CLOSE);
+  }
+
+  motorDrive(MAX_SPEED - 10, MAX_SPEED);
+  delay(DURATION_MOVEMENT_FORWARDS_START);
+
+  // Turn 90 degrees left to start line-following
+  motorRotate90DegreesLeft();
 }
 
 // Function to turn on NeoPixel for a specific direction
@@ -204,7 +222,7 @@ void avoidObstacle() {
   motorStop();
   delay(DURATION_DELAY_AVOID_OBSTACLE);
 
-  motorRotate90DegreesRight();  // Turn 90° to the right 
+  motorRotate90DegreesRight();  // Turn 90° to the right
   motorDrive(MAX_SPEED, MAX_SPEED);
   delay(DURATION_DELAY_AVOID_OBSTACLE);  // Drive forwards
 
@@ -251,8 +269,8 @@ void followLine() {
       _blackStartTime = millis();                  // Start the timer
     } else if (millis() - _blackStartTime >= 150)  // Check if 150ms have passed
     {
-      motorStop();                         // Stop motors
-      setDirectionLights(false, false, false);  // Turn off all direction lights 
+      motorStop();                              // Stop motors
+      setDirectionLights(false, false, false);  // Turn off all direction lights
       gripper(GRIPPER_OPEN);
       _isStopping = true;
       return;  // Stop execution
@@ -285,13 +303,13 @@ void followLine() {
     motorDrive(STEADY_SPEED, 165);           // Slightly to the right
     setDirectionLights(false, true, false);  // Right turn lights
   } else if (sensorReadings[5] >= deadzoneHigh && sensorReadings[6] >= deadzoneHigh) {
-    motorDrive(STEADY_SPEED, 0);            // More to the right
+    motorDrive(STEADY_SPEED, 0);             // More to the right
     setDirectionLights(false, true, false);  // Right turn lights
   } else if (sensorReadings[2] >= deadzoneHigh && sensorReadings[3] >= deadzoneHigh) {
     motorDrive(165, STEADY_SPEED);           // Slightly to the left
     setDirectionLights(true, false, false);  // Left turn lights
   } else if (sensorReadings[1] >= deadzoneHigh && sensorReadings[2] >= deadzoneHigh) {
-    motorDrive(0, STEADY_SPEED);            // More to the left
+    motorDrive(0, STEADY_SPEED);             // More to the left
     setDirectionLights(true, false, false);  // Left turn lights
   } else if (sum < deadzoneLow * SENSOR_COUNT) {
     motorDrive(-255, 255);  // Search for the line
