@@ -1,51 +1,128 @@
+/*
+-----------------------------Team Informatie------------------------------
+  RobotNummer: BB004
+  Robot naam: Muisbertus
+  Groep: IC-INF-1C (IDrunkDrive)
+  Contributors: Thomas scholtens & Jasper Wesseling
+
+  COPYRIGHT: © 2025 | IDrunkDrive
+
+
+  ╔════════════════════════════════════════════════════╗
+  ║               ARDUINO PIN CONFIGURATION           ║
+  ╠════════════════════╦══════════════════════════════╣
+  ║      ANALOG PINS   ║        FUNCTION              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ A0                 ║ Sensor 1 - Infrared Line     ║
+  ║ A1                 ║ Sensor 2 - Infrared Line     ║
+  ║ A2                 ║ Sensor 3 - Infrared Line     ║
+  ║ A3                 ║ Sensor 4 - Infrared Line     ║
+  ║ A4                 ║ Sensor 5 - Infrared Line     ║
+  ║ A5                 ║ Sensor 6 - Infrared Line     ║
+  ║ A6                 ║ Sensor 7 - Infrared Line     ║
+  ║ A7                 ║ Sensor 8 - Infrared Line     ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║     DIGITAL PINS   ║        FUNCTION              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 2                  ║ R2_ROTATION_PIN - Speed Sensor  ║
+  ║ 3                  ║ R1_ROTATION_PIN - Speed Sensor  ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║   MOTOR CONTROL    ║                              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 5                  ║ B2_MOTOR_PIN                 ║
+  ║ 6                  ║ B1_MOTOR_PIN                 ║
+  ║ 9                  ║ A2_MOTOR_PIN                 ║
+  ║ 10                 ║ A1_MOTOR_PIN                 ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║  LEDS & SERVOS     ║                              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 7                  ║ GRIPPER_PIN - Servo Gripper  ║
+  ║ 8                  ║ PIXEL_PIN - Corner Lamps     ║
+  ║ 11                 ║ SERVO_PIN - Ultrasonic Rot.  ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ ULTRASONIC SENSOR  ║                              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 12                 ║ ECHO_PIN                     ║
+  ║ 13                 ║ TRIGGER_PIN                  ║
+  ╚════════════════════╩══════════════════════════════╝
+*/
+
+// libery for the LED
 #include <Adafruit_NeoPixel.h>
 
-const int NUM_PIXELS = 4; // Number of NeoPixels in the strip
-const int PIXEL_PIN = 8;  // Pin connected to the NeoPixels
-// Create NeoPixel object
-Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
-// Motor pins
-const int A1_MOTOR_PIN = 10;
-const int A2_MOTOR_PIN = 9;
-const int B1_MOTOR_PIN = 6;
-const int B2_MOTOR_PIN = 5;
-const int R1_ROTATION_PIN = 3;
-const int R2_ROTATION_PIN = 2;
-int deadPulses;
-int currentPulse;
+/* 
+########################
+  pint defines
+########################
+*/
+// LED pins
+#define NUM_PIXELS 4 // Number of NeoPixels in the strip
+#define PIXEL_PIN 8  // Pin connected to the NeoPixels
+
+// Motor pins and speed sensors
+#define A1_MOTOR_PIN 10
+#define A2_MOTOR_PIN 9
+#define B1_MOTOR_PIN 6
+#define B2_MOTOR_PIN 5
+#define R1_ROTATION_PIN 3
+#define R2_ROTATION_PIN 2
+
 // IR pins
-const int IR_PIN_ZERO = A0;
-const int IR_PIN_FOUR = A4;
-const int IR_PIN_THREE = A3;
-const int IR_PIN_SEVEN = A7;
+#define IR_PIN_ZERO A0
+#define IR_PIN_FOUR A4
+#define IR_PIN_THREE A3
+#define IR_PIN_SEVEN A7
+
 // Servo pins
-const int SERVO_PIN = 11;
-const int TRIGGER_PIN = 13;
-const int ECHO_PIN = 12;
+#define SERVO_PIN 11
+#define GRIPPER_PIN 7
+
+// Sonic sensor pin
+#define TRIGGER_PIN 13
+#define ECHO_PIN 12
+
 // Rotation intergers
 int r1Rotations = 0;
 int r2Rotations = 0;
-// Approx*
+
+// Readings from sonic sensor in cm to approximately rotation wheel to cover distence
 const int ZERO_CM_IN_ROTATIONS = 2;
-// echo sensor variables
+
+// sonic sensor variables
 long duration;
 int distance;
+
 // Variables for determining pulse movement
 int pulsesToMove;
+
 // Keep track of whether robot moves or not
 int currentAmountOfPulses;
 int noMoveCounter;
 boolean isPreviousVoid = false;
+
 // reference points
 double rightDistance = 0;
 double leftDistance = 0;
 double differenceInDistance;
 boolean isInMiddle = false;
-boolean isStartupDZERO = false;
-const int IR_COLOR_BLACK = 900;
-const int GRIPPER_PIN = 7;
 
-// Setup function
+// Define the color black threshold of IR sensor
+const int IR_COLOR_BLACK = 900;
+
+// Creating the LED object
+Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+// int for keeping track of movement or no movement of the wheels
+int deadPulses;
+int currentPulse;
+
+
+
+/* 
+########################
+  Setup
+########################
+*/
 void setup()
 {
   // Serial communication
@@ -70,162 +147,22 @@ void setup()
   pinMode(IR_PIN_THREE, INPUT);
   pinMode(IR_PIN_SEVEN, INPUT);
   pinMode(GRIPPER_PIN, OUTPUT);
-  // Initialization routine
-  for (int i = 0; i < 3; i++){
-    while (getDistanceFromPulse() > 29)
-    {
-      delay(1);
-    }
-  }
-  for (int i = 0; i < 3; i++){
-    while (analogRead(IR_PIN_FOUR) < IR_COLOR_BLACK){
-      delay(1);
-      moveForward(245,255);
-    }
-    while (analogRead(IR_PIN_FOUR) > IR_COLOR_BLACK)
-    {
-      delay(1);
-      moveForward(245,255);
-    }
-  }
-  while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
-    moveForward(245,255);
-  }
-  while (analogRead(IR_PIN_ZERO) < IR_COLOR_BLACK){
-    moveForward(245,255);
-  }
-  while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
-    moveForward(245,255);
-  }
-  //CLOSE THE SERVO
-  isStartupDZERO = true;
-  moveGripper(1100);
-  moveForward(0 , 255);
-  delay(700);
-  while (analogRead(IR_PIN_THREE) < IR_COLOR_BLACK){
-    delay(1);
-  }
-  stopMoving();
-  moveForward(255,245);
-  delay(1000);
-  stopMoving();
+  
+  startOfMaze();
 }
 
-// Interrupt routine for rotation pin R1
-void rotateR1()
-{
-  noInterrupts();
-  static unsigned long timer;
-  static bool lastState;
-  if(millis() > timer)
-  {
-    bool state = digitalRead(R1_ROTATION_PIN);
-    if(state != lastState)
-    {
-      r1Rotations++;
-      lastState = state;
-    }
-    timer = millis() + 10;
-  }
-  interrupts();
-  // moveGripper(1100);
-}
 
-// Interrupt routine for rotation pin R2
-void rotateR2()
-{
-  noInterrupts();
-  static unsigned long timer;
-  static bool lastState;
-  if(millis() > timer)
-  {
-    bool state = digitalRead(R2_ROTATION_PIN);
-    if(state != lastState)
-    {
-      r2Rotations++;
-      lastState = state;
-    }
-    timer = millis() + 10;
-  }
-  interrupts();
-  // moveGripper(1100);
-}
 
-// Check if R1 rotation is dead
-void checkIfR1Dead(boolean moveBack){
-  // Check if pulse is still same when it has to be moving
-  if(currentPulse == r1Rotations)
-  {
-    deadPulses++;
-    delay(100);
-    Serial.println("Dead Pulse activated");
-  }
-  else
-    // Reset var's when this is called
-  {
-    currentPulse = r1Rotations;
-    deadPulses = 0;
-    Serial.println("Dead Pulse reset");
-  }
-  // Called when robot is stuck, *Should unstuck robot*
-  if(deadPulses > 10)
-  {
-    int oldR1Rotations = r1Rotations;
-    stopMoving();
-    if(moveBack){
-      moveBackward(210,210);
-      delay(400);
-    }
-
-    // Called depending on boolean state. So forward/backward
-    if(!moveBack){
-      moveForward(210, 210);
-      delay(250);
-    }
-
-    stopMoving();
-    deadPulses = 0;
-  }
-}
-
-// Check if R2 rotation is dead
-void checkIfR2Dead(boolean moveBack){
-  // Check if pulse is still same when it has to be moving
-  if(currentPulse == r2Rotations)
-  {
-    deadPulses++;
-    delay(100);
-    Serial.println("Dead Pulse activated");
-  }
-  else
-  // Reset var's when this is called
-  {
-    currentPulse = r2Rotations;
-    deadPulses = 0;
-    Serial.println("Dead Pulse reset");
-  }
-  if(deadPulses > 10)
-  {
-    int oldR2Rotations = r2Rotations;
-    stopMoving();
-    if(moveBack){
-      moveBackward(210,210);
-      delay(400);
-    }
-    
-    // Called depending on boolean state. So forward/backward
-    if(!moveBack){
-      moveForward(210, 210);
-      delay(250);
-    }
-    stopMoving();
-    deadPulses = 0;
-  }
-}
-
-// Main loop function
+/* 
+########################
+  The main loop
+########################
+*/
 void loop()
 {
+  // close the gripper
+  moveGripper(1100);
+
   // IR sensor readings and movement control based on sensor readings
   if(analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK)
   {
@@ -245,13 +182,19 @@ void loop()
   }
   if (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK && analogRead(IR_PIN_FOUR) > IR_COLOR_BLACK && analogRead(IR_PIN_THREE) > IR_COLOR_BLACK && analogRead(IR_PIN_SEVEN) > IR_COLOR_BLACK )
   {
+    // Stop the code because the end is detected
     stopMoving();
     delay(250);
     moveGripper(100);
     exit(0);
   }
   
-// Called when the robot doesnt know how far it can drive.
+  /* 
+  ########################
+    Solve maze
+  ########################
+  */
+  // Called when the robot doesnt know how far it can drive.
   // Basically the initial push for the robot to start
   if (pulsesToMove == 0)
   {
@@ -348,6 +291,12 @@ void checkSurrounding()
     isInMiddle = false;
   }
 }
+
+/* 
+########################
+  movment of the robot
+########################
+*/
 
 // Function to execute a turn-around maneuver
 void turnAround()
@@ -465,21 +414,22 @@ void turnAround()
 }
 
 // A more in depth function to turn left.
-void turnLeft()
-{
+void turnLeft() {
   delay(200);
-  // This is called incase of the robot being against the wall in front.
-  moveBackward(220, 220);
+  moveBackward(220, 220); // Reverse slightly before turning
   delay(200);
   stopMoving();
   delay(100);
   r2Rotations = 0;
   moveServo(0);
 
-  // Turn the robot left
-  while (r2Rotations < 28)
-  {
-    moveLeft(0, 250);
+  // quick max power boost
+  moveLeft(0, 255);  
+  delay(400);
+
+  // Reduce speed to normal turning speed
+  while (r2Rotations < 28) {
+    moveLeft(0, 220);
     checkIfR2Dead(true);
     sendPulse();
     if (distance < 13)
@@ -496,27 +446,28 @@ void turnLeft()
   r2Rotations = 0;
 }
 
+
 // A more in depth function to turn turn
-void turnRight()
-{
+void turnRight() {
   delay(200);
-  // Move backwards to counter-act the forward creeps because they could work against the turn.
   moveBackward(220, 220);
   delay(200);
   stopMoving();
   delay(100);
   r1Rotations = 0;
-  // Actually turn right here.
-  while (r1Rotations < 29)
-  {
-    moveRight(250, 0);
+
+  // quick max power boost
+  moveRight(255, 0);  
+  delay(400);
+
+  // Reduce speed to normal turning speed
+  while (r1Rotations < 28) {
+    moveRight(220, 0);
     checkIfR1Dead(true);
     Serial.println(r1Rotations);
     sendPulse();
     if (distance < 14) 
-    {
       break;
-    }
   }
   stopMoving();
   delay(200);
@@ -529,6 +480,7 @@ void turnRight()
   r2Rotations = 0;
   delay(200);
 }
+
 
 // Function to move the robot right
 void moveRight(int leftSpeed, int rightSpeed)
@@ -558,17 +510,12 @@ void moveLeft(int leftSpeed, int rightSpeed)
   analogWrite(B2_MOTOR_PIN, rightSpeed);
 }
 
-// Function to control the servo motor
-void moveServo(int angle)
-{
-  for (int i = 0; i < 10; i++)
-  {
-    int pulseWidth = map(angle, 0, 180, 544, 2400);
-    digitalWrite(SERVO_PIN, HIGH);
-    delayMicroseconds(pulseWidth);
-    digitalWrite(SERVO_PIN, LOW);
-  }
-}
+
+/* 
+########################
+  sonic sensor control
+########################
+*/
 
 // Function to send ultrasonic pulses
 void sendPulse()
@@ -603,7 +550,101 @@ int getDistanceFromPulse()
   return avaragePulse;
 }
 
-// Function to move the robot forward
+/* 
+########################
+  Servo motors control
+########################
+*/
+
+// Move the gripper in the front to grip the cone
+void moveGripper(int pulse) {
+  static unsigned long lastTime = 0;
+  static int lastPulse = 1500;  // Default: Neutral servo position
+
+  if (pulse > 0) {
+    lastPulse = pulse;  // Update to new pulse width
+  }
+
+  unsigned long currentTime = millis();
+  if (currentTime - lastTime >= 20) {  // Ensure 50Hz signal
+    lastTime = currentTime;
+
+    // Generate servo pulse
+    digitalWrite(GRIPPER_PIN, HIGH);
+    delayMicroseconds(lastPulse);
+    digitalWrite(GRIPPER_PIN, LOW);
+  }
+}
+
+// Function to control the servo motor for the sonic sensor
+void moveServo(int angle)
+{
+  delay(100);
+  for (int i = 0; i < 10; i++)
+  {
+    int pulseWidth = map(angle, 0, 180, 544, 2400);
+    digitalWrite(SERVO_PIN, HIGH);
+    delayMicroseconds(pulseWidth);
+    digitalWrite(SERVO_PIN, LOW);
+  }
+}
+
+/* 
+########################
+  Posions the robot 
+  at the start of the maze
+########################
+*/
+void startOfMaze() {
+  // read pulses
+  for (int i = 0; i < 3; i++){
+    while (getDistanceFromPulse() > 29)
+    {
+      delay(1);
+    }
+  }
+  // when detected wait for other robot to clear the start zone
+  delay(1000); 
+
+  // try to follow the line
+  for (int i = 0; i < 3; i++){
+    while (analogRead(IR_PIN_FOUR) < IR_COLOR_BLACK){
+      delay(1);
+      moveForward(245,255);
+    }
+    while (analogRead(IR_PIN_FOUR) > IR_COLOR_BLACK)
+    {
+      delay(1);
+      moveForward(245,255);
+    }
+  }
+  while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
+    moveForward(245,255);
+  }
+  while (analogRead(IR_PIN_ZERO) < IR_COLOR_BLACK){
+    moveForward(245,255);
+  }
+  while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
+    moveForward(245,255);
+  }
+
+  // close the gripper and turn left
+  moveGripper(1100);
+  moveForward(0 , 255);
+  delay(700);
+  // stop than move a little futher in the maze
+  stopMoving();
+  moveForward(255,245);
+  delay(1500);
+  stopMoving();
+}
+
+/* 
+########################
+  Motor fuctions
+########################
+*/
+// move forward
 void moveForward(int leftSpeed, int rightSpeed)
 {
   pixels.setPixelColor(2, pixels.Color(255, 255, 255));
@@ -617,7 +658,7 @@ void moveForward(int leftSpeed, int rightSpeed)
   analogWrite(B2_MOTOR_PIN, rightSpeed);
 }
 
-// Function to move the robot backward
+// Move backwards
 void moveBackward(int leftSpeed, int rightSpeed)
 {
   pixels.setPixelColor(2, pixels.Color(0, 50, 0));
@@ -631,7 +672,7 @@ void moveBackward(int leftSpeed, int rightSpeed)
   analogWrite(B2_MOTOR_PIN, 0);
 }
 
-// Function to stop all robot movement
+// stop moving
 void stopMoving()
 {
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
@@ -671,20 +712,125 @@ void adjustDirection()
   checkIfR1Dead(true);
 }
 
-// Function to control the gripper
-// Function is made with millis() in mind so that it doesnt overload/clog up the functions that should actually run.
-void moveGripper(int pulse){
+
+
+/* 
+########################
+  Interrupt routines
+########################
+*/
+// Pin 1
+void rotateR1()
+{
+  noInterrupts();
   static unsigned long timer;
-  static int lastPulse;
-  if (millis() > timer) {
-    if (pulse > 0) {
-      lastPulse = pulse;
-    } else {
-      pulse = lastPulse;
+  static bool lastState;
+  if(millis() > timer)
+  {
+    bool state = digitalRead(R1_ROTATION_PIN);
+    if(state != lastState)
+    {
+      r1Rotations++;
+      lastState = state;
     }
-    digitalWrite(GRIPPER_PIN, HIGH);
-    delayMicroseconds(pulse);
-    digitalWrite(GRIPPER_PIN, LOW);
-    timer = millis() + 20;  // 20ms interval for servo
+    timer = millis() + 10;
+  }
+  interrupts();
+}
+
+// Pin 2
+void rotateR2()
+{
+  noInterrupts();
+  static unsigned long timer;
+  static bool lastState;
+  if(millis() > timer)
+  {
+    bool state = digitalRead(R2_ROTATION_PIN);
+    if(state != lastState)
+    {
+      r2Rotations++;
+      lastState = state;
+    }
+    timer = millis() + 10;
+  }
+  interrupts();
+}
+
+/* 
+########################
+  Fuction checking if 
+  there are no readings 
+  from the speed sensors
+########################
+*/
+void checkIfR1Dead(boolean moveBack){
+  // Check if pulse is still same when it has to be moving
+  if(currentPulse == r1Rotations)
+  {
+    deadPulses++;
+    delay(100);
+    Serial.println("Dead Pulse activated");
+  }
+  else
+  // Reset var's when this is called
+  {
+    currentPulse = r1Rotations;
+    deadPulses = 0;
+    Serial.println("Dead Pulse reset");
+  }
+  // Called when robot is stuck, *Should unstuck robot*
+  if(deadPulses > 10)
+  {
+    int oldR1Rotations = r1Rotations;
+    stopMoving();
+    if(moveBack){
+      moveBackward(210,210);
+      delay(400);
+    }
+
+    // Called depending on boolean state. So forward/backward
+    if(!moveBack){
+      moveForward(210, 210);
+      delay(250);
+    }
+
+    stopMoving();
+    deadPulses = 0;
+  }
+}
+
+// Check if R2 rotation is dead
+void checkIfR2Dead(boolean moveBack){
+  // Check if pulse is still same when it has to be moving
+  if(currentPulse == r2Rotations)
+  {
+    deadPulses++;
+    delay(100);
+    Serial.println("Dead Pulse activated");
+  }
+  else
+  // Reset var's when this is called
+  {
+    currentPulse = r2Rotations;
+    deadPulses = 0;
+    Serial.println("Dead Pulse reset");
+  }
+  if(deadPulses > 10)
+  {
+    int oldR2Rotations = r2Rotations;
+    stopMoving();
+    if(moveBack){
+      moveBackward(210,210);
+      delay(400);
+    }
+    
+    // Called depending on boolean state. So forward/backward
+    if(!moveBack){
+      moveForward(210, 210);
+      delay(250);
+    }
+    stopMoving();
+    deadPulses = 0;
   }
 }
