@@ -536,8 +536,6 @@ void sendPulse()
 // This function is called so that we get a more accurate reading.
 int getDistanceFromPulse()
 {
-
-  // TODO CHECK THIS FUCTION
   int avaragePulse = 0;
   for (int i = 0; i < 5; i++)
   {
@@ -775,7 +773,7 @@ void checkIfR1Dead(boolean moveBack){
     Serial.println("Dead Pulse activated");
   }
   else
-    // Reset var's when this is called
+  // Reset var's when this is called
   {
     currentPulse = r1Rotations;
     deadPulses = 0;
