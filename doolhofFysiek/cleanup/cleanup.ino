@@ -1,4 +1,13 @@
 /*
+-----------------------------Team Informatie------------------------------
+  RobotNummer: BB004
+  Robot naam: Muisbertus
+  Groep: IC-INF-1C (IDrunkDrive)
+  Contributors: Thomas scholtens & Jasper Wesseling
+
+  COPYRIGHT: © 2025 | IDrunkDrive
+
+
   ╔════════════════════════════════════════════════════╗
   ║               ARDUINO PIN CONFIGURATION           ║
   ╠════════════════════╦══════════════════════════════╣
@@ -38,58 +47,82 @@
   ╚════════════════════╩══════════════════════════════╝
 */
 
-// KLOPT NOG NIET!!!
-
+// libery for the LED
 #include <Adafruit_NeoPixel.h>
 
+/* 
+########################
+  pint defines
+########################
+*/
+// LED pins
 #define NUM_PIXELS 4 // Number of NeoPixels in the strip
 #define PIXEL_PIN 8  // Pin connected to the NeoPixels
-// Create NeoPixel object
-Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
-// Motor pins
+
+// Motor pins and speed sensors
 #define A1_MOTOR_PIN 10
 #define A2_MOTOR_PIN 9
 #define B1_MOTOR_PIN 6
 #define B2_MOTOR_PIN 5
 #define R1_ROTATION_PIN 3
 #define R2_ROTATION_PIN 2
-int deadPulses;
-int currentPulse;
+
 // IR pins
 #define IR_PIN_ZERO A0
 #define IR_PIN_FOUR A4
 #define IR_PIN_THREE A3
 #define IR_PIN_SEVEN A7
+
 // Servo pins
 #define SERVO_PIN 11
+#define GRIPPER_PIN 7
+
+// Sonic sensor pin
 #define TRIGGER_PIN 13
 #define ECHO_PIN 12
 
-#define GRIPPER_PIN 7
 // Rotation intergers
 int r1Rotations = 0;
 int r2Rotations = 0;
-// Approx*
+
+// Readings from sonic sensor in cm to approximately rotation wheel to cover distence
 const int ZERO_CM_IN_ROTATIONS = 2;
-// echo sensor variables
+
+// sonic sensor variables
 long duration;
 int distance;
+
 // Variables for determining pulse movement
 int pulsesToMove;
+
 // Keep track of whether robot moves or not
 int currentAmountOfPulses;
 int noMoveCounter;
 boolean isPreviousVoid = false;
+
 // reference points
 double rightDistance = 0;
 double leftDistance = 0;
 double differenceInDistance;
 boolean isInMiddle = false;
-volatile boolean isStartupDZERO = false;
+
+// Define the color black threshold of IR sensor
 const int IR_COLOR_BLACK = 900;
 
+// Creating the LED object
+Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
-// Setup function
+// int for keeping track of movement or no movement of the wheels
+int deadPulses;
+int currentPulse;
+
+
+
+/* 
+########################
+  Setup
+########################
+*/
 void setup()
 {
   // Serial communication
@@ -118,120 +151,18 @@ void setup()
   startOfMaze();
 }
 
-// Interrupt routine for rotation pin R1
-void rotateR1()
-{
-  noInterrupts();
-  static unsigned long timer;
-  static bool lastState;
-  if(millis() > timer)
-  {
-    bool state = digitalRead(R1_ROTATION_PIN);
-    if(state != lastState)
-    {
-      r1Rotations++;
-      lastState = state;
-    }
-    timer = millis() + 10;
-  }
-  interrupts();
-}
 
-// Interrupt routine for rotation pin R2
-void rotateR2()
-{
-  noInterrupts();
-  static unsigned long timer;
-  static bool lastState;
-  if(millis() > timer)
-  {
-    bool state = digitalRead(R2_ROTATION_PIN);
-    if(state != lastState)
-    {
-      r2Rotations++;
-      lastState = state;
-    }
-    timer = millis() + 10;
-  }
-  interrupts();
-}
 
-// Check if R1 rotation is dead
-void checkIfR1Dead(boolean moveBack){
-  // Check if pulse is still same when it has to be moving
-  if(currentPulse == r1Rotations)
-  {
-    deadPulses++;
-    delay(100);
-    Serial.println("Dead Pulse activated");
-  }
-  else
-    // Reset var's when this is called
-  {
-    currentPulse = r1Rotations;
-    deadPulses = 0;
-    Serial.println("Dead Pulse reset");
-  }
-  // Called when robot is stuck, *Should unstuck robot*
-  if(deadPulses > 10)
-  {
-    int oldR1Rotations = r1Rotations;
-    stopMoving();
-    if(moveBack){
-      moveBackward(210,210);
-      delay(400);
-    }
-
-    // Called depending on boolean state. So forward/backward
-    if(!moveBack){
-      moveForward(210, 210);
-      delay(250);
-    }
-
-    stopMoving();
-    deadPulses = 0;
-  }
-}
-
-// Check if R2 rotation is dead
-void checkIfR2Dead(boolean moveBack){
-  // Check if pulse is still same when it has to be moving
-  if(currentPulse == r2Rotations)
-  {
-    deadPulses++;
-    delay(100);
-    Serial.println("Dead Pulse activated");
-  }
-  else
-  // Reset var's when this is called
-  {
-    currentPulse = r2Rotations;
-    deadPulses = 0;
-    Serial.println("Dead Pulse reset");
-  }
-  if(deadPulses > 10)
-  {
-    int oldR2Rotations = r2Rotations;
-    stopMoving();
-    if(moveBack){
-      moveBackward(210,210);
-      delay(400);
-    }
-    
-    // Called depending on boolean state. So forward/backward
-    if(!moveBack){
-      moveForward(210, 210);
-      delay(250);
-    }
-    stopMoving();
-    deadPulses = 0;
-  }
-}
-
-// Main loop function
+/* 
+########################
+  The main loop
+########################
+*/
 void loop()
 {
+  // close the gripper
   moveGripper(1100);
+
   // IR sensor readings and movement control based on sensor readings
   if(analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK)
   {
@@ -251,13 +182,19 @@ void loop()
   }
   if (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK && analogRead(IR_PIN_FOUR) > IR_COLOR_BLACK && analogRead(IR_PIN_THREE) > IR_COLOR_BLACK && analogRead(IR_PIN_SEVEN) > IR_COLOR_BLACK )
   {
+    // Stop the code because the end is detected
     stopMoving();
     delay(250);
     moveGripper(100);
     exit(0);
   }
   
-// Called when the robot doesnt know how far it can drive.
+  /* 
+  ########################
+    Solve maze
+  ########################
+  */
+  // Called when the robot doesnt know how far it can drive.
   // Basically the initial push for the robot to start
   if (pulsesToMove == 0)
   {
@@ -668,6 +605,10 @@ void startOfMaze() {
       delay(1);
     }
   }
+  // when detected wait for other robot to clear the start zone
+  delay(1000); 
+
+  // try to follow the line
   for (int i = 0; i < 3; i++){
     while (analogRead(IR_PIN_FOUR) < IR_COLOR_BLACK){
       delay(1);
@@ -688,14 +629,12 @@ void startOfMaze() {
   while (analogRead(IR_PIN_ZERO) > IR_COLOR_BLACK){
     moveForward(245,255);
   }
-  //CLOSE THE SERVO
-  isStartupDZERO = true;
+
+  // close the gripper and turn left
   moveGripper(1100);
   moveForward(0 , 255);
   delay(700);
-  while (analogRead(IR_PIN_THREE) < IR_COLOR_BLACK){
-    delay(1);
-  }
+  // stop than move a little futher in the maze
   stopMoving();
   moveForward(255,245);
   delay(1500);
@@ -773,4 +712,127 @@ void adjustDirection()
     moveForward(255, 180);
   }
   checkIfR1Dead(true);
+}
+
+
+
+/* 
+########################
+  Interrupt routines
+########################
+*/
+// Pin 1
+void rotateR1()
+{
+  noInterrupts();
+  static unsigned long timer;
+  static bool lastState;
+  if(millis() > timer)
+  {
+    bool state = digitalRead(R1_ROTATION_PIN);
+    if(state != lastState)
+    {
+      r1Rotations++;
+      lastState = state;
+    }
+    timer = millis() + 10;
+  }
+  interrupts();
+}
+
+// Pin 2
+void rotateR2()
+{
+  noInterrupts();
+  static unsigned long timer;
+  static bool lastState;
+  if(millis() > timer)
+  {
+    bool state = digitalRead(R2_ROTATION_PIN);
+    if(state != lastState)
+    {
+      r2Rotations++;
+      lastState = state;
+    }
+    timer = millis() + 10;
+  }
+  interrupts();
+}
+
+/* 
+########################
+  Fuction checking if 
+  there are no readings 
+  from the speed sensors
+########################
+*/
+void checkIfR1Dead(boolean moveBack){
+  // Check if pulse is still same when it has to be moving
+  if(currentPulse == r1Rotations)
+  {
+    deadPulses++;
+    delay(100);
+    Serial.println("Dead Pulse activated");
+  }
+  else
+    // Reset var's when this is called
+  {
+    currentPulse = r1Rotations;
+    deadPulses = 0;
+    Serial.println("Dead Pulse reset");
+  }
+  // Called when robot is stuck, *Should unstuck robot*
+  if(deadPulses > 10)
+  {
+    int oldR1Rotations = r1Rotations;
+    stopMoving();
+    if(moveBack){
+      moveBackward(210,210);
+      delay(400);
+    }
+
+    // Called depending on boolean state. So forward/backward
+    if(!moveBack){
+      moveForward(210, 210);
+      delay(250);
+    }
+
+    stopMoving();
+    deadPulses = 0;
+  }
+}
+
+// Check if R2 rotation is dead
+void checkIfR2Dead(boolean moveBack){
+  // Check if pulse is still same when it has to be moving
+  if(currentPulse == r2Rotations)
+  {
+    deadPulses++;
+    delay(100);
+    Serial.println("Dead Pulse activated");
+  }
+  else
+  // Reset var's when this is called
+  {
+    currentPulse = r2Rotations;
+    deadPulses = 0;
+    Serial.println("Dead Pulse reset");
+  }
+  if(deadPulses > 10)
+  {
+    int oldR2Rotations = r2Rotations;
+    stopMoving();
+    if(moveBack){
+      moveBackward(210,210);
+      delay(400);
+    }
+    
+    // Called depending on boolean state. So forward/backward
+    if(!moveBack){
+      moveForward(210, 210);
+      delay(250);
+    }
+    stopMoving();
+    deadPulses = 0;
+  }
 }
