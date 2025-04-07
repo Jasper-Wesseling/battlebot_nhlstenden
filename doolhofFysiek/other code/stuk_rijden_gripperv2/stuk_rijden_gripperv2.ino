@@ -10,7 +10,7 @@
 
 Adafruit_NeoPixel strip(NUM_PIXELS, NeoLED, NEO_GRB + NEO_KHZ800);
 
-const int Button1 = 2;
+const int Button1 = 4;
 const int MotorL_1 = 9;
 const int MotorL_2 = 10;
 const int MotorR_1 = 5;
@@ -20,6 +20,7 @@ const int MotorCorrection = 10;
 unsigned long startMillis = 0;
 bool buttonPressed = false;
 bool sequenceStarted = false;
+bool gripperClosed = false;
 
 void setup() {
     pinMode(GRIPPER, OUTPUT);
@@ -63,32 +64,42 @@ void loop() {
         if (elapsed == 2000UL) moveServo(GRIPPER_CLOSE);
         if (elapsed == 3000UL) moveServo(GRIPPER_OPEN);
         if (elapsed == 6000UL) MoveForward(255);
-        if (elapsed == 8000UL) moveServo(GRIPPER_CLOSE);
+        if (elapsed == 8000UL) { moveServo(GRIPPER_CLOSE); gripperClosed = true; }
         if (elapsed == 10000UL) TurnRightWithCurve(255, 50);
         if (elapsed == 13000UL) MotorsStop();
         if (elapsed == 14000UL) TurnLeftWithCurve(255, 50);
         if (elapsed == 16000UL) MotorsStop();
-        if (elapsed == 18000UL) moveServo(GRIPPER_OPEN);
         if (elapsed == 18000UL) MoveBackwards(255);
-        if (elapsed == 20000UL) { MotorsStop(); sequenceStarted = false; }
+        if (elapsed == 20000UL) { 
+            moveServo(GRIPPER_OPEN); // Move this here so it gets the last pulse
+            gripperClosed = false; 
+            MotorsStop(); 
+            sequenceStarted = false; 
+        }
+    } 
+    else {
+        BlinkStillLED();
     }
-   else ( BlinkStillLED());
+
+    if (gripperClosed && sequenceStarted) {
+        moveServo(GRIPPER_CLOSE); // Only keep it closed while the sequence is running
+    }
 }
+
 void moveServo(int pulse) {
-  static unsigned long timer;
-  static int lastPulse;
-  
-  if (millis() > timer) {
-    if (pulse > 0) {
-      lastPulse = pulse;
-    } else {
-      pulse = lastPulse;  
+    static unsigned long timer;
+    static int lastPulse;
+    if (millis() > timer) {
+        if (pulse > 0) {
+            lastPulse = pulse;
+        } else {
+            pulse = lastPulse;
+        }
+        digitalWrite(GRIPPER, HIGH);
+        delayMicroseconds(pulse);
+        digitalWrite(GRIPPER, LOW);
+        timer = millis() + 20; // 20ms interval for servo
     }
-    digitalWrite(GRIPPER, HIGH);  
-    delayMicroseconds(pulse); 
-    digitalWrite(GRIPPER, LOW);
-    timer = millis() + 20;  
-  }
 }
 
 void TurnMotorLeft(int speed) {
