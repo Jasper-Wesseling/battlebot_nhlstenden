@@ -1,6 +1,6 @@
 //-----------------------------Team Informatie------------------------------//
   // RobotNummer: BB008
-  // Robot naam: BistDuFreaky?
+  // Robot naam: BB-8
   // Groep: IC-INF-1C (IDrunkDrive)
   // Contributors: Dinand Rengers & Tim Kap
 
@@ -38,7 +38,7 @@
     // NEOPIXEL //
     #define PIN 2
     #define NUMPIXELS 4
-    Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
+    Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
     // DEBUGGING //
       //#define SENSORVALUE
@@ -64,13 +64,19 @@ void setup() {
   pinMode(MOTOR_B1, OUTPUT); 
   pinMode(MOTOR_B2, OUTPUT); 
   pinMode(ROTATION_1, INPUT);
+
+  gripper(0);
   pinMode(GRIPPER, OUTPUT);
+
+  strip.begin();
+  strip.show();
 
   Serial.begin(9600); 
 } 
 
 //-----------------------------LOOP------------------------------//
 void loop() {
+  gripperOpen();
   followLine();
 }
 
@@ -79,14 +85,26 @@ void loop() {
   // MOTOR FUNCTIES
     // RIJVOORUIT FUNCTIE
       void drive(int left, int right) { 
+        strip.clear();
+        strip.setPixelColor(0, strip.Color(255, 0, 0));  // red
+        strip.setPixelColor(1, strip.Color(255, 0, 0));  // red
+        strip.setPixelColor(2, strip.Color(255, 0, 0));  // white
+        strip.setPixelColor(3, strip.Color(255, 0, 0));  // white
+        strip.show();
         analogWrite(MOTOR_A1, max(0, -left)); 
         analogWrite(MOTOR_A2, max(0, left)); 
         analogWrite(MOTOR_B1, max(0, -right)); 
-        analogWrite(MOTOR_B2, max(0, right)); 
+        analogWrite(MOTOR_B2, max(0, right));
       }
 
     // MOTORSTOPPEN FUNCTIE
       void stop() { 
+        strip.clear();
+        strip.setPixelColor(0, strip.Color(0, 255, 0));
+        strip.setPixelColor(1, strip.Color(0, 255, 0));
+        strip.setPixelColor(2, strip.Color(0, 255, 0));
+        strip.setPixelColor(3, strip.Color(0, 255, 0));
+        strip.show();
         analogWrite(MOTOR_A1, 0); 
         analogWrite(MOTOR_A2, 0); 
         analogWrite(MOTOR_B1, 0); 
@@ -96,7 +114,6 @@ void loop() {
   // GRIPPER FUNCTIES
     // GRIPPER INITIALISATIE
       void gripper(int pulse) {
-          gripper(0);
           static unsigned long timer;
           static int lastPulse;
           if (millis() > timer) {
@@ -140,17 +157,32 @@ void loop() {
         int currentDirection = 0;  // Houd de huidige richting bij
 
         // Bepaal de huidige toestand
-        if (sensorReadings[6] >= deadzonehigh && sensorReadings[7] >= deadzonehigh) { 
-            currentDirection = -1;  // Rechts veel lijn -> draai links
-            drive(FULLSPEED, -120);  // Draai links
+        if (sensorReadings[0] >= deadzonehigh && sensorReadings[1] >= deadzonehigh) { 
+          strip.clear();
+          strip.setPixelColor(0, strip.Color(0, 255, 0));
+          strip.setPixelColor(3, strip.Color(0, 255, 0));
+          strip.show();
+          currentDirection = -1;  // Rechts veel lijn -> draai links
+          drive(-120, FULLSPEED);  // Draai links
         }
+        
         else if (sensorReadings[3] >= deadzonehigh && sensorReadings[4] >= deadzonehigh) { 
+          strip.clear();
+          strip.setPixelColor(0, strip.Color(255, 0, 0));  // red
+          strip.setPixelColor(1, strip.Color(255, 0, 0));  // red
+          strip.setPixelColor(2, strip.Color(255, 0, 0));  // white
+          strip.setPixelColor(3, strip.Color(255, 0, 0));  // white
+          strip.show();
           currentDirection = 0;  // Midden op lijn -> rechtdoor
           drive(STEADY_SPEED, STEADY_SPEED);  // Rechtdoor
         }
-        else if (sensorReadings[0] >= deadzonehigh && sensorReadings[1] >= deadzonehigh) { 
+        else (sensorReadings[6] >= deadzonehigh && sensorReadings[7] >= deadzonehigh) { 
+          strip.clear();
+          strip.setPixelColor(1, strip.Color(0, 255, 0));  // red
+          strip.setPixelColor(2, strip.Color(0, 255, 0));  // white
+          strip.show();
             currentDirection = 1;  // Links veel lijn -> draai rechts
-            drive(-120, FULLSPEED);  // Draai rechts
+            drive(FULLSPEED, -120);  // Draai rechts
         }
         else if (sensorReadings[4] >= deadzonehigh && sensorReadings[5] >= deadzonehigh) { 
             currentDirection = 3;  // Iets rechts -> stuur beetje bij
@@ -170,7 +202,7 @@ void loop() {
         }
         else if (sum < deadzonelow * NUMSENSORS) { 
             currentDirection = 7;  // Geen lijn -> draai zoeken
-            drive(-255, 255);  // Zoeken naar lijn
+            drive(0, 0);  // Zoeken naar lijn
         }
 
         // Als de richting veranderd is, print dan de nieuwe status

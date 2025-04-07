@@ -1,4 +1,46 @@
-#define DEBUG  // Comment this line out to disable debugging
+/*
+-----------------------------Team Informatie------------------------------
+  RobotNummer: BB019
+  Robot naam: FreakyBot
+  Groep: IC-INF-1C (IDrunkDrive)
+  Contributors: Joran Vos & Charlotte Fennema
+
+  COPYRIGHT: © 2025 | IDrunkDrive
+
+  ╔═══════════════════════════════════════════════════╗
+  ║               ARDUINO PIN CONFIGURATION           ║
+  ╠════════════════════╦══════════════════════════════╣
+  ║      ANALOG PINS   ║        FUNCTION              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ A0                 ║ Sensor 1 - Infrared Line     ║
+  ║ A1                 ║ Sensor 2 - Infrared Line     ║
+  ║ A2                 ║ Sensor 3 - Infrared Line     ║
+  ║ A3                 ║ Sensor 4 - Infrared Line     ║
+  ║ A4                 ║ Sensor 5 - Infrared Line     ║
+  ║ A5                 ║ Sensor 6 - Infrared Line     ║
+  ║ A6                 ║ Sensor 7 - Infrared Line     ║
+  ║ A7                 ║ Sensor 8 - Infrared Line     ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║   MOTOR CONTROL    ║                              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 5                  ║ MOTOR_R_B2                   ║
+  ║ 6                  ║ MOTOR_R_B1                   ║
+  ║ 9                  ║ MOTOR_L_A2                   ║
+  ║ 10                 ║ MOTOR_L_A1                   ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║  LEDS & SERVOS     ║                              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 7                  ║ GRIPPER_SERVO                ║
+  ║ 8                  ║ NEOPIXEL_PIN - Corner Lamps  ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ ULTRASONIC SENSOR  ║                              ║
+  ╠════════════════════╬══════════════════════════════╣
+  ║ 12                 ║ ECHO_PIN                     ║
+  ║ 13                 ║ TRIG_PIN                     ║
+  ╚════════════════════╩══════════════════════════════╝
+*/
+
+// #define DEBUG  // Comment this line out to disable debugging
 
 // Neopixel Setup
 #include <Adafruit_NeoPixel.h>
@@ -38,7 +80,7 @@ int _sensorMax[SENSOR_COUNT];
 // Extra defines
 #define BLACK 900
 #define WHITE 600
-#define THRESHOLD 600  // Lower threshold for better sensitivity to thin lines
+#define THRESHOLD 750  // Lower threshold for better sensitivity to thin lines
 #define DURATION_90_DEGREES_SPIN 600
 #define DURATION_MOVEMENT_FORWARDS_START 700
 #define DURATION_DELAY_AVOID_OBSTACLE 300
@@ -125,6 +167,7 @@ void motorRotate90DegreesRight() {
   analogWrite(MOTOR_L_A2, MAX_SPEED);
   analogWrite(MOTOR_R_B1, MAX_SPEED - 30);
   analogWrite(MOTOR_R_B2, 0);
+  setDirectionLights(false, true, false);  // Right turn lights
   delay(DURATION_90_DEGREES_SPIN);
   motorStop();
 }
@@ -134,6 +177,7 @@ void motorRotate90DegreesLeft() {
   analogWrite(MOTOR_L_A2, 0);
   analogWrite(MOTOR_R_B1, 0);
   analogWrite(MOTOR_R_B2, MAX_SPEED);
+  setDirectionLights(true, false, false);  // Left turn lights
   delay(DURATION_90_DEGREES_SPIN);
   motorStop();
 }
@@ -154,7 +198,7 @@ void startRace() {
   }
 
   motorDrive(MAX_SPEED - 10, MAX_SPEED);
-  delay(DURATION_MOVEMENT_FORWARDS_START);
+  delay(DURATION_MOVEMENT_FORWARDS_START - 100);
 
   // Turn 90 degrees left to start line-following
   motorRotate90DegreesLeft();
@@ -168,9 +212,9 @@ void setDirectionLights(bool isLeftTurn, bool isRightTurn, bool isMovingStraight
       strip.setPixelColor(i, strip.Color(0, 0, 255));  // Blue for left turn
     }
   } else if (isRightTurn) {
-    // Turn on blue for right turn
+    // Turn on white for right turn
     for (int i = 0; i < NUM_PIXELS; i++) {
-      strip.setPixelColor(i, strip.Color(255, 255, 255));  // Blue for right turn
+      strip.setPixelColor(i, strip.Color(255, 255, 255));  // White for right turn
     }
   } else if (isMovingStraight) {
     // Turn on green for moving straight
@@ -264,6 +308,16 @@ void followLine() {
     }
   }
 
+  // Debugging for line sensor readings
+  #ifdef DEBUG
+    Serial.print("Sensor Readings: ");
+    for (int i = 0; i < SENSOR_COUNT; i++) {
+      Serial.print(sensorReadings[i]);
+      if (i < SENSOR_COUNT - 1) Serial.print(", ");
+    }
+    Serial.println();
+  #endif
+
   if (allBlack) {
     if (_blackStartTime == 0) {
       _blackStartTime = millis();                  // Start the timer
@@ -271,7 +325,13 @@ void followLine() {
     {
       motorStop();                              // Stop motors
       setDirectionLights(false, false, false);  // Turn off all direction lights
+      motorDrive(-SLOW_SPEED, -SLOW_SPEED);
+      delay(500);
+      motorStop();
       gripper(GRIPPER_OPEN);
+      delay(500);
+      motorDrive(-SLOW_SPEED, -SLOW_SPEED);
+      delay(2000);
       _isStopping = true;
       return;  // Stop execution
     }
