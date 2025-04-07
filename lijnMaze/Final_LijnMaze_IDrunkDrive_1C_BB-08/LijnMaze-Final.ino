@@ -7,6 +7,40 @@
 
 //----------------BreadBord-Pin-Installatie + Variabelen---------------------//
 
+//    ╔════════════════════════════════════════════════════╗
+//    ║               ARDUINO PIN CONFIGURATION           ║
+//    ╠════════════════════╦══════════════════════════════╣
+//    ║      ANALOG PINS   ║        FUNCTION              ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║ A0                 ║ Sensor 1 - Infrared Line     ║
+//    ║ A1                 ║ Sensor 2 - Infrared Line     ║
+//    ║ A2                 ║ Sensor 3 - Infrared Line     ║
+//    ║ A3                 ║ Sensor 4 - Infrared Line     ║
+//    ║ A4                 ║ Sensor 5 - Infrared Line     ║
+//    ║ A5                 ║ Sensor 6 - Infrared Line     ║
+//    ║ A6                 ║ Sensor 7 - Infrared Line     ║
+//    ║ A7                 ║ Sensor 8 - Infrared Line     ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║   MOTOR CONTROL    ║                              ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║ 5                  ║ B2_MOTOR_PIN                 ║
+//    ║ 6                  ║ B1_MOTOR_PIN                 ║
+//    ║ 10                 ║ A2_MOTOR_PIN                 ║
+//    ║ 11                 ║ A1_MOTOR_PIN                 ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║  LEDS & SERVOS     ║                              ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║ 3                  ║ GRIPPER_PIN - Servo Gripper  ║
+//    ║ 2                  ║ PIXEL_PIN - Corner Lamps     ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║ ULTRASONIC SENSOR  ║                              ║
+//    ╠════════════════════╬══════════════════════════════╣
+//    ║ 7                  ║ ECHO_PIN                     ║
+//    ║ 4                  ║ TRIGGER_PIN                  ║
+//    ╚════════════════════╩══════════════════════════════╝
+
+// LIBRARIES
 #include <Adafruit_NeoPixel.h>
 
 // MOTOR //
@@ -26,6 +60,9 @@ const int sensorPins[NUMSENSORS] = {A7, A6, A5, A4, A3, A2, A1, A0};
 // ECHO SONIC SENSOR //
 #define TRIGGERPIN 4
 #define ECHOPIN 7
+
+// BUTTON
+#define BUTTON1 2
 
 // NEOPIXEL //
 #define PIN 8
@@ -105,7 +142,7 @@ void gripper(int pulse) {
         digitalWrite(GRIPPER, HIGH);
         delayMicroseconds(pulse);
         digitalWrite(GRIPPER, LOW);
-        timer = millis() + 20; //20ms interval voor servo
+        timer = millis() + 20;
     }
 }
 
@@ -126,7 +163,7 @@ void start() {
 
     // Gripper openen
     gripperOpen();
-    delay(1000);
+    delay(500);
 
     // Rij een stuk naar voren
     drive(0, 200, 0, 185);
@@ -145,17 +182,12 @@ void start() {
     }
   
     // Zodra een object wordt gedetecteerd, rijd naar voren en pak de pion op
-    Serial.println("Object gedetecteerd! Pion oppakken...");
-    drive(0, 190, 0, 180);  // Rijd een klein stukje naar voren
-    delay(400);  // Wacht even om goed te positioneren
-    stop();  // Stop de robot
+    drive(0, 190, 0, 180); 
+    delay(400);
+    stop();
 
-    Serial.println("Gripper sluiten...");
-    gripperClosed();  // Sluit de gripper om de pion op te pakken
-    delay(200);  // Wacht even om zeker te zijn dat de gripper gesloten is
-  
-    // Start de lijnvolg logica
-    Serial.println("Lijnvolg logica starten...");
+    gripperClosed();
+    delay(200);
 }
 
 // LIJNVOLG LOGICA
@@ -182,7 +214,8 @@ bool checkForObject() {
       return false;
     }
 }
-  
+
+// FOLLOW LINE FUNCTIE
 void followLine() {
     int sensorReadings[NUMSENSORS];
     int sum = 0;
@@ -196,24 +229,21 @@ void followLine() {
     int deadzonelow = avg - 50;
     int deadzonehigh = avg + 50;
   
-    // Controleer op zwarte box
+    // Controleer of zwarte box is detecteerd
     if (detectBlackBox()) {
-      stop();  // Stop de robot
-      gripperOpen();  // Open de gripper om de pion te droppen
-      Serial.println("Pion gedropt!");
-      drive(230, 0, 0, 220);  // Rijd een stuk achteruit
-      delay(1000);  // Rijd achteruit voor 1 seconde
-      stop();  // Stop de robot
-      return;  // Stop verdere lijnvolg logica
+      stop();
+      gripperOpen();
+      drive(230, 0, 0, 220);
+      delay(600);
+      stop();
     }
   
     // Controleer op objecten
     if (checkForObject()) {
-      // Object ontwijken
-      drive(230, 0, 0, 220); // Rijd achteruit
-      delay(500); // Wacht even om te ontwijken
-      stop(); // Stop na het ontwijken
-      objectDetected = false; // Reset de detectiestatus
+      drive(230, 0, 0, 220);
+      delay(500);
+      stop();
+      objectDetected = false;
       return;
     }
   
@@ -251,7 +281,8 @@ void followLine() {
       drive(230, 0, 0, 220);
     }
 }
-  
+
+// Functie voor het detecteren van de BLACKBOX
 bool detectBlackBox() {
     int sensorReadings[NUMSENSORS];
     int sum = 0;
@@ -273,7 +304,7 @@ bool detectBlackBox() {
     return false;
 }
 
-// LED Functies
+// NEOPIXEL LED Functies
 void activeLights() {
   strip.clear();
   strip.setPixelColor(0, strip.Color(0, 255, 0));
