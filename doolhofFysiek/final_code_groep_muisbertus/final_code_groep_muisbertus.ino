@@ -603,6 +603,15 @@ void startOfMaze() {
       delay(1);
     }
   }
+
+  // when detected wait for other robot to clear the start zone and show wait signal 
+  pixels.setPixelColor(2, pixels.Color(0, 0, 0));
+  pixels.setPixelColor(3, pixels.Color(0, 0, 0));
+  pixels.setPixelColor(1, pixels.Color(0, 0, 255));
+  pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+  pixels.show();
+  delay(5000); 
+
   // when detected wait for other robot to clear the start zone
   delay(1000); 
 
