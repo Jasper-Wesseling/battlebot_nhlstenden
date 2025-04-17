@@ -27,11 +27,6 @@ Back To Top
   </ol>
 </details>
 
-<!-- OVER HET PROJECT -->
-## Over Het Project
-
-
-
 <!-- ROBOTS -->
 ## Robots
 
