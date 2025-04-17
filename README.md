@@ -18,10 +18,6 @@ Back To Top
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li>
-      <a href="#over-het-project">Over Het Project</a>
-    </ul>
-  </li>
   <li>
     <a href="robots">Robots</a>
   </li>
